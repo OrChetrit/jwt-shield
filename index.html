@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="JWT Shield Debugger — Security-first JWT analyzer. Your tokens never leave the browser." />
+  <title>JWT Shield Debugger</title>
+  <!-- Fonts are the only external resource; no JWT data is ever transmitted -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="shield-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 7V13C3 17.9706 7.02944 22.5 12 23C16.9706 22.5 21 17.9706 21 13V7L12 2Z" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M8.5 12L10.5 14.5L15.5 9.5" stroke="#0a0a0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">JWT Shield <span class="brand-accent">Debugger</span></h1>
+          <p class="brand-sub">Security-First Token Analysis</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="hbadge">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L3 7V13C3 18 7.5 22.5 12 23C16.5 22.5 21 18 21 13V7L12 2Z" stroke="currentColor" stroke-width="2"/></svg>
+          Client-Side Only
+        </span>
+        <span class="hbadge">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2Z" stroke="currentColor" stroke-width="2"/></svg>
+          Zero Data Transmission
+        </span>
+        <span class="hbadge">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Real-Time Audit
+        </span>
+      </div>
+    </header>
+
+    <!-- ── Main Grid ────────────────────────────────────────── -->
+    <main class="main-grid" id="main-grid">
+
+      <!-- Left Column -->
+      <div class="col-left">
+
+        <!-- JWT Input -->
+        <section class="card" id="card-input">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon icon-blue">⬡</span> JWT Input
+            </h2>
+            <div class="card-actions">
+              <button class="btn-ghost" id="btn-sample" title="Load a sample token with security findings">Sample</button>
+              <button class="btn-ghost btn-danger" id="btn-clear" title="Clear input">Clear</button>
+            </div>
+          </div>
+          <div class="input-wrap">
+            <textarea
+              id="jwt-input"
+              class="jwt-textarea"
+              placeholder="Paste your JWT here…&#10;&#10;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9&#10;  .eyJzdWIiOiIxMjM0NTY3ODkwIn0&#10;  .signature"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              aria-label="JWT token input"
+            ></textarea>
+            <div class="input-status" id="input-status" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <!-- Token Visual Breakdown -->
+        <section class="card card-hidden" id="card-breakdown">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon icon-purple">◈</span> Token Breakdown
+            </h2>
+            <div class="breakdown-legend">
+              <span class="leg leg-h">Header</span>
+              <span class="leg-dot">·</span>
+              <span class="leg leg-p">Payload</span>
+              <span class="leg-dot">·</span>
+              <span class="leg leg-s">Signature</span>
+            </div>
+          </div>
+          <div class="token-visual" id="token-visual" aria-label="Colour-coded JWT parts"></div>
+          <div class="token-meta">
+            <div class="token-meta-item">
+              <span class="tmeta-label tmeta-h">ALG</span>
+              <span class="tmeta-value" id="meta-alg">—</span>
+            </div>
+            <div class="token-meta-item">
+              <span class="tmeta-label tmeta-p">CLAIMS</span>
+              <span class="tmeta-value" id="meta-claims">—</span>
+            </div>
+            <div class="token-meta-item">
+              <span class="tmeta-label tmeta-s">SIG</span>
+              <span class="tmeta-value" id="meta-sig">Not Verified</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Decoded Header -->
+        <section class="card card-hidden" id="card-header">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon icon-header">{ }</span> Decoded Header
+            </h2>
+            <button class="btn-copy" data-target="decoded-header" title="Copy JSON">Copy</button>
+          </div>
+          <pre class="code-block" id="decoded-header" aria-label="Decoded JWT header JSON"></pre>
+        </section>
+
+        <!-- Decoded Payload -->
+        <section class="card card-hidden" id="card-payload">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon icon-payload">{ }</span> Decoded Payload
+            </h2>
+            <div class="card-header-right">
+              <span class="claim-badge" id="claim-count"></span>
+              <button class="btn-copy" data-target="decoded-payload" title="Copy JSON">Copy</button>
+            </div>
+          </div>
+          <pre class="code-block" id="decoded-payload" aria-label="Decoded JWT payload JSON"></pre>
+        </section>
+
+      </div><!-- /col-left -->
+
+      <!-- Right Column -->
+      <div class="col-right">
+
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state" aria-label="Empty state — paste a JWT to begin">
+          <div class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M60 12L18 36V66C18 88.8 37.2 109.2 60 112C82.8 109.2 102 88.8 102 66V36L60 12Z" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M45 60L54 70L75 50" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.25"/>
+            </svg>
+          </div>
+          <h3 class="empty-title">Paste a JWT to begin</h3>
+          <p class="empty-desc">Decoded instantly. Audited for security vulnerabilities. Entirely in your browser — no server, no logs.</p>
+          <ul class="feature-list" aria-label="Security checks performed">
+            <li class="fi fi-critical">Algorithm confusion &amp; "none" attack</li>
+            <li class="fi fi-high">Privilege escalation claims</li>
+            <li class="fi fi-warning">Expiration, nbf &amp; audience checks</li>
+            <li class="fi fi-info">Issuer, jti &amp; scope analysis</li>
+            <li class="fi fi-pass">Signature verification via Web Crypto API</li>
+          </ul>
+        </div>
+
+        <!-- Security Score Bar -->
+        <section class="card card-hidden score-card" id="card-score">
+          <div class="score-grid">
+            <div class="score-cell sc-critical">
+              <span class="score-num" id="cnt-critical">0</span>
+              <span class="score-lbl">Critical</span>
+            </div>
+            <div class="score-cell sc-high">
+              <span class="score-num" id="cnt-high">0</span>
+              <span class="score-lbl">High</span>
+            </div>
+            <div class="score-cell sc-medium">
+              <span class="score-num" id="cnt-medium">0</span>
+              <span class="score-lbl">Medium</span>
+            </div>
+            <div class="score-cell sc-pass">
+              <span class="score-num" id="cnt-pass">0</span>
+              <span class="score-lbl">Passed</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Security Audit Findings -->
+        <section class="card card-hidden" id="card-audit">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon icon-yellow">⚡</span> Security Audit
+            </h2>
+            <span class="audit-ts" id="audit-ts" aria-label="Audit timestamp"></span>
+          </div>
+          <div class="findings" id="findings" role="list" aria-label="Security audit findings"></div>
+        </section>
+
+        <!-- Signature Verification -->
+        <section class="card card-hidden" id="card-verify">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon icon-green">🔑</span> Signature Verification
+            </h2>
+          </div>
+          <div class="verify-body">
+            <div class="form-row">
+              <label class="form-label" for="v-alg">Algorithm</label>
+              <select class="form-select" id="v-alg" aria-label="Signature algorithm">
+                <option value="HS256">HS256 — HMAC SHA-256</option>
+                <option value="HS384">HS384 — HMAC SHA-384</option>
+                <option value="HS512">HS512 — HMAC SHA-512</option>
+                <option value="RS256">RS256 — RSA PKCS#1 v1.5 SHA-256</option>
+                <option value="RS384">RS384 — RSA PKCS#1 v1.5 SHA-384</option>
+                <option value="RS512">RS512 — RSA PKCS#1 v1.5 SHA-512</option>
+                <option value="ES256">ES256 — ECDSA P-256 SHA-256</option>
+                <option value="ES384">ES384 — ECDSA P-384 SHA-384</option>
+                <option value="ES512">ES512 — ECDSA P-521 SHA-512</option>
+                <option value="PS256">PS256 — RSA-PSS SHA-256</option>
+                <option value="PS384">PS384 — RSA-PSS SHA-384</option>
+                <option value="PS512">PS512 — RSA-PSS SHA-512</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-label" for="v-secret">
+                Secret / Public Key
+                <span class="form-hint" id="key-hint">HMAC secret (UTF-8 string)</span>
+              </label>
+              <textarea
+                id="v-secret"
+                class="form-textarea"
+                placeholder="HMAC secret or PEM public key…"
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="Secret or public key for signature verification"
+              ></textarea>
+            </div>
+            <button class="btn-primary" id="btn-verify" aria-label="Verify signature">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 2L3 7V13C3 18 7.5 22.5 12 23C16.5 22.5 21 18 21 13V7L12 2Z" stroke="currentColor" stroke-width="2"/>
+                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Verify Signature
+            </button>
+            <div class="verify-result card-hidden" id="verify-result" aria-live="polite"></div>
+          </div>
+          <p class="verify-note">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Verification runs locally via the Web Crypto API. Your secret never leaves this page.
+          </p>
+        </section>
+
+      </div><!-- /col-right -->
+
+    </main>
+
+    <!-- ── Footer ────────────────────────────────────────────── -->
+    <footer class="app-footer">
+      <span>JWT Shield Debugger — 100% client-side &amp; zero data transmission</span>
+      <span class="fsep" aria-hidden="true">·</span>
+      <span>Powered by the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API" class="flink" target="_blank" rel="noopener noreferrer">Web Crypto API</a></span>
+      <span class="fsep" aria-hidden="true">·</span>
+      <a href="https://github.com/your-username/jwt-shield" class="flink" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+    </footer>
+
+  </div><!-- /app -->
+  <script src="app.js"></script>
+</body>
+</html>
