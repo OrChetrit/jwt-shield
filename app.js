@@ -215,7 +215,7 @@ function runAudit(jwt) {
   const now = Math.floor(Date.now() / 1000);
 
   // ── A. Algorithm checks ──────────────────────────────────────
-  const alg = (header.alg ?? '').toString();
+  const alg = (header.alg ?? '').toString().slice(0, 64); // L2: bound length to prevent DoS via oversized alg strings
   const algUpper = alg.toUpperCase();
 
   if (!alg || algUpper === 'NONE') {
@@ -574,12 +574,13 @@ function renderTokenVisual(parts) {
   const displayP = p.length > maxLen ? p.slice(0, maxLen / 3) + '…' : p;
   const displayS = s.length > maxLen ? s.slice(0, maxLen / 3) + '…' : s;
 
+  // H1: escape each segment — parts are raw user input and may contain HTML special chars
   DOM.tokenVisual.innerHTML =
-    `<span class="tv-header">${displayH}</span>` +
+    `<span class="tv-header">${escapeHtml(displayH)}</span>` +
     `<span class="tv-dot">.</span>` +
-    `<span class="tv-payload">${displayP}</span>` +
+    `<span class="tv-payload">${escapeHtml(displayP)}</span>` +
     `<span class="tv-dot">.</span>` +
-    `<span class="tv-signature">${displayS}</span>`;
+    `<span class="tv-signature">${escapeHtml(displayS)}</span>`;
 }
 
 /** Render the decoded header/payload sections */
@@ -781,10 +782,7 @@ function processToken(raw) {
     renderAll(jwt, findings);
   } catch (err) {
     currentJWT = null;
-    DOM.inputStatus.className = 'input-status status-error';
-    DOM.inputStatus.textContent = `✗ ${err.message}`;
-    resetUI();
-    // Keep input visible even in error state
+    resetUI(); // L1: reset first, then write status (resetUI clears it)
     DOM.inputStatus.className = 'input-status status-error';
     DOM.inputStatus.textContent = `✗ ${err.message}`;
   }
@@ -824,7 +822,7 @@ async function handleVerify() {
       DOM.metaSig.style.color = 'var(--c-critical)';
     }
   } catch (err) {
-    showVerifyResult('error', `⚠ Verification error: ${err.message}`);
+    showVerifyResult('error', `⚠ ${friendlyVerifyError(err)}`);
     DOM.metaSig.textContent = '⚠ Error';
     DOM.metaSig.style.color = 'var(--c-medium)';
   } finally {
@@ -837,6 +835,18 @@ async function handleVerify() {
       Verify Signature`;
     DOM.btnVerify.classList.remove('loading');
   }
+}
+
+/** M2: Map raw Web Crypto / internal errors to user-friendly messages */
+function friendlyVerifyError(err) {
+  const m = (err.message || '').toLowerCase();
+  if (m.includes('importkey') || m.includes('keydata') || m.includes('invalidcharacter'))
+    return 'Invalid key format. For HS* paste the HMAC secret; for RS*/ES*/PS* paste the PEM public key.';
+  if (m.includes('algorithm') || m.includes('namedcurve'))
+    return 'Algorithm / key mismatch. Ensure the selected algorithm matches the key type.';
+  if (m.includes('none'))
+    return 'Algorithm "none" has no signature to verify.';
+  return 'Verification failed. Check that the key and algorithm are correct.';
 }
 
 function showVerifyResult(type, msg) {
@@ -943,11 +953,16 @@ function init() {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') handleVerify();
   });
 
-  // Check if a token was passed in the URL hash (share-link friendly)
-  const hash = window.location.hash.slice(1);
-  if (hash && hash.split('.').length === 3) {
-    DOM.jwtInput.value = decodeURIComponent(hash);
-    processToken(DOM.jwtInput.value.trim());
+  // M1: Load token from URL hash — validate strictly before processing
+  const JWT_HASH_RE = /^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]*$/;
+  const rawHash = window.location.hash.slice(1);
+  if (rawHash) {
+    let decoded = '';
+    try { decoded = decodeURIComponent(rawHash); } catch { /* malformed URI — ignore */ }
+    if (JWT_HASH_RE.test(decoded)) {
+      DOM.jwtInput.value = decoded;
+      processToken(decoded);
+    }
   }
 }
 
