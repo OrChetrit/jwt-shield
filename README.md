@@ -179,7 +179,7 @@ All contributions must maintain the core privacy guarantee: **no JWT data may ev
 
 ## License
 
-MIT License — see `LICENSE` for details.
+MIT © 2026 Or Chetrit — see [`LICENSE`](LICENSE) for details.
 
 ---
 

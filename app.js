@@ -1,3 +1,5 @@
+/* JWT Shield Debugger | Created by Or Chetrit | MIT License */
+
 /**
  * JWT Shield Debugger — app.js
  *
@@ -23,10 +25,10 @@
 
 const SEV = Object.freeze({
   CRITICAL: 'critical',
-  HIGH:     'high',
-  MEDIUM:   'medium',
-  INFO:     'info',
-  PASS:     'pass',
+  HIGH: 'high',
+  MEDIUM: 'medium',
+  INFO: 'info',
+  PASS: 'pass',
 });
 
 const SEV_ORDER = { critical: 0, high: 1, medium: 2, info: 3, pass: 4 };
@@ -45,10 +47,10 @@ const ELEVATED_ROLES = [
 ];
 
 /** Algorithm families */
-const HMAC_ALGS  = ['HS256', 'HS384', 'HS512'];
-const RSA_ALGS   = ['RS256', 'RS384', 'RS512'];
+const HMAC_ALGS = ['HS256', 'HS384', 'HS512'];
+const RSA_ALGS = ['RS256', 'RS384', 'RS512'];
 const ECDSA_ALGS = ['ES256', 'ES384', 'ES512'];
-const PSS_ALGS   = ['PS256', 'PS384', 'PS512'];
+const PSS_ALGS = ['PS256', 'PS384', 'PS512'];
 
 const HASH_MAP = {
   HS256: 'SHA-256', HS384: 'SHA-384', HS512: 'SHA-512',
@@ -72,7 +74,7 @@ const PSS_SALT = { PS256: 32, PS384: 48, PS512: 64 };
  */
 function b64uDecode(str) {
   const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
-  const pad  = (4 - (b64.length % 4)) % 4;
+  const pad = (4 - (b64.length % 4)) % 4;
   return atob(b64 + '='.repeat(pad));
 }
 
@@ -173,12 +175,12 @@ function parseJWT(raw) {
   const [headerB64, payloadB64, sigB64] = parts;
 
   return {
-    raw:          token,
-    parts:        parts,
-    header:       b64uToJSON(headerB64),
-    payload:      b64uToJSON(payloadB64),
+    raw: token,
+    parts: parts,
+    header: b64uToJSON(headerB64),
+    payload: b64uToJSON(payloadB64),
     signingInput: `${headerB64}.${payloadB64}`,
-    signature:    sigB64,
+    signature: sigB64,
   };
 }
 
@@ -190,10 +192,10 @@ function parseJWT(raw) {
 /** Format seconds into a human-readable duration string */
 function fmtDuration(secs) {
   const abs = Math.abs(secs);
-  if (abs < 60)       return `${abs}s`;
-  if (abs < 3600)     return `${Math.round(abs / 60)}m`;
-  if (abs < 86400)    return `${Math.round(abs / 3600)}h`;
-  if (abs < 2592000)  return `${Math.round(abs / 86400)}d`;
+  if (abs < 60) return `${abs}s`;
+  if (abs < 3600) return `${Math.round(abs / 60)}m`;
+  if (abs < 86400) return `${Math.round(abs / 3600)}h`;
+  if (abs < 2592000) return `${Math.round(abs / 86400)}d`;
   if (abs < 31536000) return `${Math.round(abs / 2592000)} months`;
   return `${(abs / 31536000).toFixed(1)} years`;
 }
@@ -218,31 +220,31 @@ function runAudit(jwt) {
 
   if (!alg || algUpper === 'NONE') {
     findings.push({
-      severity:   SEV.CRITICAL,
-      title:      'Algorithm "none" Attack Vector',
-      desc:       `The \`alg\` header is "${alg || '(missing)'}". This disables signature verification entirely — any party can forge a valid-looking token by manipulating the payload and setting alg to "none".`,
-      rec:        'Reject tokens with alg=none at the server. Enforce a strict allowlist of accepted algorithms (e.g. RS256, ES256). Never trust the algorithm declared in the token header.',
+      severity: SEV.CRITICAL,
+      title: 'Algorithm "none" Attack Vector',
+      desc: `The \`alg\` header is "${alg || '(missing)'}". This disables signature verification entirely — any party can forge a valid-looking token by manipulating the payload and setting alg to "none".`,
+      rec: 'Reject tokens with alg=none at the server. Enforce a strict allowlist of accepted algorithms (e.g. RS256, ES256). Never trust the algorithm declared in the token header.',
     });
   } else if (algUpper === 'HS256' || algUpper === 'HS384' || algUpper === 'HS512') {
     findings.push({
       severity: SEV.INFO,
-      title:    `Symmetric Algorithm (${alg})`,
-      desc:     `HMAC algorithms use the same key for signing and verification. If the verifier is a public service, a weak or exposed secret allows signature forgery.`,
-      rec:      'Ensure the HMAC secret is cryptographically random, at least 256 bits, and stored securely. Consider RS256 or ES256 for distributed systems where the verifier shouldn\'t hold the signing key.',
+      title: `Symmetric Algorithm (${alg})`,
+      desc: `HMAC algorithms use the same key for signing and verification. If the verifier is a public service, a weak or exposed secret allows signature forgery.`,
+      rec: 'Ensure the HMAC secret is cryptographically random, at least 256 bits, and stored securely. Consider RS256 or ES256 for distributed systems where the verifier shouldn\'t hold the signing key.',
     });
   } else if ([...RSA_ALGS, ...ECDSA_ALGS, ...PSS_ALGS].includes(algUpper)) {
     findings.push({
       severity: SEV.PASS,
-      title:    `Asymmetric Algorithm (${alg})`,
-      desc:     `Asymmetric algorithms allow public key distribution for verification while keeping the private key confidential.`,
-      rec:      'Ensure the private signing key is securely stored, rotated periodically, and never exposed.',
+      title: `Asymmetric Algorithm (${alg})`,
+      desc: `Asymmetric algorithms allow public key distribution for verification while keeping the private key confidential.`,
+      rec: 'Ensure the private signing key is securely stored, rotated periodically, and never exposed.',
     });
   } else {
     findings.push({
       severity: SEV.MEDIUM,
-      title:    `Non-Standard Algorithm: ${alg}`,
-      desc:     `The algorithm "${alg}" is not a standard JWT algorithm (RFC 7518). Some non-standard algorithms have known implementation flaws.`,
-      rec:      'Use only well-vetted algorithms from RFC 7518: RS256, ES256, HS256, or their SHA-384/512 variants.',
+      title: `Non-Standard Algorithm: ${alg}`,
+      desc: `The algorithm "${alg}" is not a standard JWT algorithm (RFC 7518). Some non-standard algorithms have known implementation flaws.`,
+      rec: 'Use only well-vetted algorithms from RFC 7518: RS256, ES256, HS256, or their SHA-384/512 variants.',
     });
   }
 
@@ -250,39 +252,39 @@ function runAudit(jwt) {
   if (payload.exp == null) {
     findings.push({
       severity: SEV.HIGH,
-      title:    'Missing Expiration Claim (exp)',
-      desc:     'No `exp` claim is present. This token never expires — if it is stolen or leaked, it remains valid indefinitely.',
-      rec:      'Always include an `exp` claim. Use short-lived access tokens (≤ 15 minutes for sensitive ops) and implement refresh token rotation.',
+      title: 'Missing Expiration Claim (exp)',
+      desc: 'No `exp` claim is present. This token never expires — if it is stolen or leaked, it remains valid indefinitely.',
+      rec: 'Always include an `exp` claim. Use short-lived access tokens (≤ 15 minutes for sensitive ops) and implement refresh token rotation.',
     });
   } else {
     const diff = payload.exp - now;
     if (diff < 0) {
       findings.push({
         severity: SEV.CRITICAL,
-        title:    'Token Expired',
-        desc:     `Token expired ${fmtDuration(-diff)} ago (${fmtTime(payload.exp)}). Any server accepting this token is vulnerable to replay with stale credentials.`,
-        rec:      'This token must be rejected. Obtain a fresh token via your authentication flow.',
+        title: 'Token Expired',
+        desc: `Token expired ${fmtDuration(-diff)} ago (${fmtTime(payload.exp)}). Any server accepting this token is vulnerable to replay with stale credentials.`,
+        rec: 'This token must be rejected. Obtain a fresh token via your authentication flow.',
       });
     } else if (diff <= 300) {
       findings.push({
         severity: SEV.MEDIUM,
-        title:    'Token Expiring Soon',
-        desc:     `Token expires in ${fmtDuration(diff)} (${fmtTime(payload.exp)}). Automations relying on this token may fail shortly.`,
-        rec:      'Proactively refresh the token before expiry using your refresh token endpoint.',
+        title: 'Token Expiring Soon',
+        desc: `Token expires in ${fmtDuration(diff)} (${fmtTime(payload.exp)}). Automations relying on this token may fail shortly.`,
+        rec: 'Proactively refresh the token before expiry using your refresh token endpoint.',
       });
     } else if (diff > 365 * 24 * 3600) {
       findings.push({
         severity: SEV.MEDIUM,
-        title:    'Excessive Token Lifetime',
-        desc:     `Token is valid for ${fmtDuration(diff)} (expires ${fmtTime(payload.exp)}). Long-lived tokens significantly increase the blast radius of a compromise.`,
-        rec:      'Use short-lived access tokens (minutes to hours). For long-lived sessions, use opaque refresh tokens stored securely.',
+        title: 'Excessive Token Lifetime',
+        desc: `Token is valid for ${fmtDuration(diff)} (expires ${fmtTime(payload.exp)}). Long-lived tokens significantly increase the blast radius of a compromise.`,
+        rec: 'Use short-lived access tokens (minutes to hours). For long-lived sessions, use opaque refresh tokens stored securely.',
       });
     } else {
       findings.push({
         severity: SEV.PASS,
-        title:    'Expiration Is Valid',
-        desc:     `Token expires at ${fmtTime(payload.exp)} (in ${fmtDuration(diff)}).`,
-        rec:      '',
+        title: 'Expiration Is Valid',
+        desc: `Token expires at ${fmtTime(payload.exp)} (in ${fmtDuration(diff)}).`,
+        rec: '',
       });
     }
   }
@@ -293,16 +295,16 @@ function runAudit(jwt) {
     if (diff < 0) {
       findings.push({
         severity: SEV.CRITICAL,
-        title:    'Token Not Yet Valid (nbf)',
-        desc:     `Token is not valid until ${fmtTime(payload.nbf)} (${fmtDuration(-diff)} from now). Accepting it now violates the JWT spec and may indicate a clock-skew misconfiguration or replay attack attempt.`,
-        rec:      'Reject tokens where current time is before `nbf`. Allow small clock-skew tolerance (≤ 30s) but no more.',
+        title: 'Token Not Yet Valid (nbf)',
+        desc: `Token is not valid until ${fmtTime(payload.nbf)} (${fmtDuration(-diff)} from now). Accepting it now violates the JWT spec and may indicate a clock-skew misconfiguration or replay attack attempt.`,
+        rec: 'Reject tokens where current time is before `nbf`. Allow small clock-skew tolerance (≤ 30s) but no more.',
       });
     } else {
       findings.push({
         severity: SEV.PASS,
-        title:    'Not-Before Claim Valid',
-        desc:     `Token became valid at ${fmtTime(payload.nbf)}.`,
-        rec:      '',
+        title: 'Not-Before Claim Valid',
+        desc: `Token became valid at ${fmtTime(payload.nbf)}.`,
+        rec: '',
       });
     }
   }
@@ -311,9 +313,9 @@ function runAudit(jwt) {
   if (payload.aud == null) {
     findings.push({
       severity: SEV.MEDIUM,
-      title:    'Missing Audience Claim (aud)',
-      desc:     'No `aud` claim. Without audience validation, this token could be forwarded to and accepted by unintended services ("confused deputy" attack).',
-      rec:      'Add a specific `aud` claim and validate it on every relying party. Reject tokens with unexpected audience values.',
+      title: 'Missing Audience Claim (aud)',
+      desc: 'No `aud` claim. Without audience validation, this token could be forwarded to and accepted by unintended services ("confused deputy" attack).',
+      rec: 'Add a specific `aud` claim and validate it on every relying party. Reject tokens with unexpected audience values.',
     });
   } else {
     const audArr = [].concat(payload.aud);
@@ -321,16 +323,16 @@ function runAudit(jwt) {
     if (hasWildcard) {
       findings.push({
         severity: SEV.HIGH,
-        title:    'Overly Broad Audience',
-        desc:     `The \`aud\` claim contains a wildcard or empty value: \`${JSON.stringify(payload.aud)}\`. This token is valid for any service, defeating audience restriction entirely.`,
-        rec:      'Use specific, named audience identifiers (e.g. "api.payments.example.com"). Never use wildcards.',
+        title: 'Overly Broad Audience',
+        desc: `The \`aud\` claim contains a wildcard or empty value: \`${JSON.stringify(payload.aud)}\`. This token is valid for any service, defeating audience restriction entirely.`,
+        rec: 'Use specific, named audience identifiers (e.g. "api.payments.example.com"). Never use wildcards.',
       });
     } else {
       findings.push({
         severity: SEV.PASS,
-        title:    'Audience Specified',
-        desc:     `aud: ${JSON.stringify(payload.aud)}`,
-        rec:      'Ensure each relying party verifies the aud value matches its own identifier.',
+        title: 'Audience Specified',
+        desc: `aud: ${JSON.stringify(payload.aud)}`,
+        rec: 'Ensure each relying party verifies the aud value matches its own identifier.',
       });
     }
   }
@@ -339,9 +341,9 @@ function runAudit(jwt) {
   if (!payload.iss) {
     findings.push({
       severity: SEV.MEDIUM,
-      title:    'Missing Issuer Claim (iss)',
-      desc:     'No `iss` claim. Without issuer validation, relying parties cannot confirm where the token originated, enabling cross-issuer token confusion.',
-      rec:      'Add an `iss` claim and validate it against a known allowlist on every relying party.',
+      title: 'Missing Issuer Claim (iss)',
+      desc: 'No `iss` claim. Without issuer validation, relying parties cannot confirm where the token originated, enabling cross-issuer token confusion.',
+      rec: 'Add an `iss` claim and validate it against a known allowlist on every relying party.',
     });
   }
 
@@ -349,9 +351,9 @@ function runAudit(jwt) {
   if (!payload.jti) {
     findings.push({
       severity: SEV.INFO,
-      title:    'Missing JWT ID (jti)',
-      desc:     'No unique `jti` identifier. Without it, replay attacks are difficult to detect since identical tokens cannot be distinguished.',
-      rec:      'Add a `jti` claim (e.g., a UUID). For high-value operations, maintain a short-lived blocklist and reject any reuse of the same jti.',
+      title: 'Missing JWT ID (jti)',
+      desc: 'No unique `jti` identifier. Without it, replay attacks are difficult to detect since identical tokens cannot be distinguished.',
+      rec: 'Add a `jti` claim (e.g., a UUID). For high-value operations, maintain a short-lived blocklist and reject any reuse of the same jti.',
     });
   }
 
@@ -366,9 +368,9 @@ function runAudit(jwt) {
   if (elevatedFound.length > 0) {
     findings.push({
       severity: SEV.HIGH,
-      title:    'Elevated Privilege Flag',
-      desc:     `The payload contains privilege-granting claims: ${elevatedFound.join(', ')}. If signature verification is skipped or the secret is weak, an attacker can forge administrative access.`,
-      rec:      'Treat JWT claims as untrusted until the signature is verified with a secure key. Apply authorisation logic server-side, independent of the token when possible.',
+      title: 'Elevated Privilege Flag',
+      desc: `The payload contains privilege-granting claims: ${elevatedFound.join(', ')}. If signature verification is skipped or the secret is weak, an attacker can forge administrative access.`,
+      rec: 'Treat JWT claims as untrusted until the signature is verified with a secure key. Apply authorisation logic server-side, independent of the token when possible.',
     });
   }
 
@@ -376,13 +378,13 @@ function runAudit(jwt) {
   const roleVal = payload.role ?? payload.roles ?? payload.userRole ?? payload.user_role;
   if (roleVal != null) {
     const roleArr = [].concat(roleVal).map(r => String(r).toLowerCase());
-    const found   = roleArr.filter(r => ELEVATED_ROLES.some(er => r.includes(er)));
+    const found = roleArr.filter(r => ELEVATED_ROLES.some(er => r.includes(er)));
     if (found.length > 0) {
       findings.push({
         severity: SEV.HIGH,
-        title:    'Elevated Role Detected',
-        desc:     `Role claim contains elevated values: ${found.map(r => `"${r}"`).join(', ')}. Privilege escalation is possible if an attacker can forge or modify this claim.`,
-        rec:      'Enforce role authorisation server-side. Validate signatures before trusting any role claim.',
+        title: 'Elevated Role Detected',
+        desc: `Role claim contains elevated values: ${found.map(r => `"${r}"`).join(', ')}. Privilege escalation is possible if an attacker can forge or modify this claim.`,
+        rec: 'Enforce role authorisation server-side. Validate signatures before trusting any role claim.',
       });
     }
   }
@@ -391,14 +393,14 @@ function runAudit(jwt) {
   const scopeVal = payload.scope ?? payload.scopes ?? payload.permissions ?? payload.scp;
   if (scopeVal != null) {
     const scopeStr = typeof scopeVal === 'string' ? scopeVal : JSON.stringify(scopeVal);
-    const dangerousPatterns = [/\*/,  /admin[:\s]write/, /admin[:\s]\*/, /\ball\b/, /full[_\s-]?access/i];
+    const dangerousPatterns = [/\*/, /admin[:\s]write/, /admin[:\s]\*/, /\ball\b/, /full[_\s-]?access/i];
     const matched = dangerousPatterns.filter(p => p.test(scopeStr));
     if (matched.length > 0) {
       findings.push({
         severity: SEV.CRITICAL,
-        title:    'Wildcard / Overly-Broad Scope',
-        desc:     `The scope/permissions claim contains broad access patterns: \`${scopeStr.slice(0, 120)}\`. This grants unrestricted access across protected resources.`,
-        rec:      'Follow the principle of least privilege. Define granular scopes per resource/action (e.g. "read:orders"). Never issue tokens with wildcard scopes.',
+        title: 'Wildcard / Overly-Broad Scope',
+        desc: `The scope/permissions claim contains broad access patterns: \`${scopeStr.slice(0, 120)}\`. This grants unrestricted access across protected resources.`,
+        rec: 'Follow the principle of least privilege. Define granular scopes per resource/action (e.g. "read:orders"). Never issue tokens with wildcard scopes.',
       });
     }
   }
@@ -411,9 +413,9 @@ function runAudit(jwt) {
   if (sensitiveFound.length > 0) {
     findings.push({
       severity: SEV.HIGH,
-      title:    'Potentially Sensitive Data in Payload',
-      desc:     `The payload contains keys that may store sensitive data: ${sensitiveFound.map(k => `"${k}"`).join(', ')}. JWT payloads are only base64-encoded, not encrypted — anyone with the token can read them.`,
-      rec:      'Never store secrets, passwords, or PII in a JWT payload unless the token is a JWE (JSON Web Encryption). Use opaque references instead.',
+      title: 'Potentially Sensitive Data in Payload',
+      desc: `The payload contains keys that may store sensitive data: ${sensitiveFound.map(k => `"${k}"`).join(', ')}. JWT payloads are only base64-encoded, not encrypted — anyone with the token can read them.`,
+      rec: 'Never store secrets, passwords, or PII in a JWT payload unless the token is a JWE (JSON Web Encryption). Use opaque references instead.',
     });
   }
 
@@ -429,7 +431,7 @@ function runAudit(jwt) {
 
 /**
  * Verify a JWT signature using the Web Crypto API.
- * Supports HS*/RS*/ES*/PS* families.
+ * Supports HS, RS, ES, and PS algorithm families.
  *
  * @param {string} signingInput  — "headerB64.payloadB64"
  * @param {string} sigB64u       — base64url-encoded signature
@@ -447,7 +449,7 @@ async function verifySignature(signingInput, sigB64u, secretOrKey, alg) {
   const hash = HASH_MAP[algUpper];
   if (!hash) throw new Error(`Unsupported algorithm: ${alg}`);
 
-  const enc  = new TextEncoder();
+  const enc = new TextEncoder();
   const data = enc.encode(signingInput);
 
   // ── HMAC (HS*) ──────────────────────────────────────────────
@@ -523,9 +525,9 @@ function syntaxHighlight(val, indent = 0) {
 
   const pad = (n) => '  '.repeat(n);
 
-  if (val === null)      return `<span class="syn-null">null</span>`;
-  if (val === true)      return `<span class="syn-bool-t">true</span>`;
-  if (val === false)     return `<span class="syn-bool-f">false</span>`;
+  if (val === null) return `<span class="syn-null">null</span>`;
+  if (val === true) return `<span class="syn-bool-t">true</span>`;
+  if (val === false) return `<span class="syn-bool-f">false</span>`;
   if (typeof val === 'number') return `<span class="syn-num">${val}</span>`;
   if (typeof val === 'string') return `<span class="syn-str">"${esc(val)}"</span>`;
 
@@ -539,8 +541,8 @@ function syntaxHighlight(val, indent = 0) {
     const keys = Object.keys(val);
     if (keys.length === 0) return '<span class="syn-punc">{}</span>';
     const pairs = keys.map(k => {
-      const keyHtml  = `<span class="syn-key">"${esc(k)}"</span>`;
-      const valHtml  = syntaxHighlight(val[k], indent + 1);
+      const keyHtml = `<span class="syn-key">"${esc(k)}"</span>`;
+      const valHtml = syntaxHighlight(val[k], indent + 1);
       return `${pad(indent + 1)}${keyHtml}<span class="syn-punc">: </span>${valHtml}`;
     });
     return `<span class="syn-punc">{</span>\n${pairs.join('<span class="syn-punc">,</span>\n')}\n${pad(indent)}<span class="syn-punc">}</span>`;
@@ -565,7 +567,7 @@ let DOM = {};
 function renderTokenVisual(parts) {
   const [h, p, s] = parts;
   const maxLen = 420;
-  const raw    = `${h}.${p}.${s}`;
+  const raw = `${h}.${p}.${s}`;
 
   // Truncate long tokens for display
   const displayH = h.length > maxLen ? h.slice(0, maxLen / 3) + '…' : h;
@@ -582,14 +584,14 @@ function renderTokenVisual(parts) {
 
 /** Render the decoded header/payload sections */
 function renderDecoded(jwt) {
-  DOM.decodedHeader.innerHTML  = syntaxHighlight(jwt.header);
+  DOM.decodedHeader.innerHTML = syntaxHighlight(jwt.header);
   DOM.decodedPayload.innerHTML = syntaxHighlight(jwt.payload);
 
   const claims = Object.keys(jwt.payload);
   DOM.claimCount.textContent = `${claims.length} claim${claims.length !== 1 ? 's' : ''}`;
 
-  DOM.metaAlg.textContent     = jwt.header.alg || '(none)';
-  DOM.metaClaims.textContent  = claims.join(', ');
+  DOM.metaAlg.textContent = jwt.header.alg || '(none)';
+  DOM.metaClaims.textContent = claims.join(', ');
 }
 
 /** Render security score counters */
@@ -597,15 +599,15 @@ function renderScore(findings) {
   const counts = { critical: 0, high: 0, medium: 0, pass: 0 };
   for (const f of findings) {
     if (f.severity === SEV.CRITICAL) counts.critical++;
-    else if (f.severity === SEV.HIGH)   counts.high++;
+    else if (f.severity === SEV.HIGH) counts.high++;
     else if (f.severity === SEV.MEDIUM || f.severity === SEV.INFO) counts.medium++;
-    else if (f.severity === SEV.PASS)   counts.pass++;
+    else if (f.severity === SEV.PASS) counts.pass++;
   }
 
   DOM.cntCritical.textContent = counts.critical;
-  DOM.cntHigh.textContent     = counts.high;
-  DOM.cntMedium.textContent   = counts.medium;
-  DOM.cntPass.textContent     = counts.pass;
+  DOM.cntHigh.textContent = counts.high;
+  DOM.cntMedium.textContent = counts.medium;
+  DOM.cntPass.textContent = counts.pass;
 
   // Highlight non-zero cells
   DOM.scoreCritical.classList.toggle('active', counts.critical > 0);
@@ -622,11 +624,11 @@ function renderFindings(findings) {
   }
 
   DOM.findings.innerHTML = findings.map(f => {
-    const sevClass  = `sev-${f.severity}`;
-    const barClass  = `finding-bar-${f.severity}`;
-    const sevLabel  = f.severity.toUpperCase();
-    const descHtml  = escapeHtml(f.desc).replace(/`([^`]+)`/g, '<code style="font-family:var(--font-mono);font-size:.72em;background:rgba(255,255,255,.07);padding:.1em .3em;border-radius:3px;">$1</code>');
-    const recHtml   = f.rec ? `<p class="finding-rec">${escapeHtml(f.rec)}</p>` : '';
+    const sevClass = `sev-${f.severity}`;
+    const barClass = `finding-bar-${f.severity}`;
+    const sevLabel = f.severity.toUpperCase();
+    const descHtml = escapeHtml(f.desc).replace(/`([^`]+)`/g, '<code style="font-family:var(--font-mono);font-size:.72em;background:rgba(255,255,255,.07);padding:.1em .3em;border-radius:3px;">$1</code>');
+    const recHtml = f.rec ? `<p class="finding-rec">${escapeHtml(f.rec)}</p>` : '';
 
     return `
       <div class="finding" role="listitem">
@@ -671,8 +673,8 @@ function renderAll(jwt, findings) {
 
   // Reset verification state
   hide(DOM.verifyResult);
-  DOM.metaSig.textContent   = 'Not Verified';
-  DOM.metaSig.style.color   = '';
+  DOM.metaSig.textContent = 'Not Verified';
+  DOM.metaSig.style.color = '';
 
   // Show all result panels, hide empty state
   hide(DOM.emptyState);
@@ -694,22 +696,22 @@ function resetUI() {
   hide(DOM.cardVerify);
   show(DOM.emptyState);
 
-  DOM.findings.innerHTML    = '';
-  DOM.decodedHeader.innerHTML  = '';
+  DOM.findings.innerHTML = '';
+  DOM.decodedHeader.innerHTML = '';
   DOM.decodedPayload.innerHTML = '';
   DOM.tokenVisual.innerHTML = '';
-  DOM.inputStatus.textContent  = '';
-  DOM.inputStatus.className    = 'input-status';
+  DOM.inputStatus.textContent = '';
+  DOM.inputStatus.className = 'input-status';
 }
 
 /** Update the key hint text based on selected algorithm */
 function updateKeyHint(alg) {
   const algUpper = (alg || '').toUpperCase();
   let hint = '';
-  if (HMAC_ALGS.includes(algUpper))        hint = 'HMAC secret (UTF-8 string)';
+  if (HMAC_ALGS.includes(algUpper)) hint = 'HMAC secret (UTF-8 string)';
   else if ([...RSA_ALGS, ...PSS_ALGS].includes(algUpper)) hint = 'RSA public key (PEM)';
-  else if (ECDSA_ALGS.includes(algUpper))  hint = 'EC public key (PEM)';
-  else                                     hint = 'Secret or public key';
+  else if (ECDSA_ALGS.includes(algUpper)) hint = 'EC public key (PEM)';
+  else hint = 'Secret or public key';
   DOM.keyHint.textContent = hint;
 }
 
@@ -723,19 +725,19 @@ function updateKeyHint(alg) {
  * The signature is intentionally invalid (demo only).
  */
 function generateSampleToken() {
-  const header  = { alg: 'HS256', typ: 'JWT' };
-  const now     = Math.floor(Date.now() / 1000);
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const now = Math.floor(Date.now() / 1000);
   const payload = {
-    sub:       'usr_7f3a91bc',
-    name:      'Jane Admin',
-    email:     'jane@example.com',
-    iat:       now - 3600,
-    exp:       now + 120,          // expires in 2 minutes → "expiring soon"
-    admin:     true,               // elevated privilege flag
-    role:      'superuser',        // elevated role
-    scope:     '*',                // wildcard scope
-    aud:       '*',                // wildcard audience
-    iss:       'demo.jwt-shield.io',
+    sub: 'usr_7f3a91bc',
+    name: 'Jane Admin',
+    email: 'jane@example.com',
+    iat: now - 3600,
+    exp: now + 120,          // expires in 2 minutes → "expiring soon"
+    admin: true,               // elevated privilege flag
+    role: 'superuser',        // elevated role
+    scope: '*',                // wildcard scope
+    aud: '*',                // wildcard audience
+    iss: 'demo.jwt-shield.io',
     // jti intentionally omitted  → missing jti finding
   };
 
@@ -769,21 +771,21 @@ function handleInput() {
 
 function processToken(raw) {
   try {
-    const jwt     = parseJWT(raw);
+    const jwt = parseJWT(raw);
     const findings = runAudit(jwt);
-    currentJWT     = jwt;
+    currentJWT = jwt;
 
-    DOM.inputStatus.className   = 'input-status status-ok';
+    DOM.inputStatus.className = 'input-status status-ok';
     DOM.inputStatus.textContent = '✓ Valid JWT structure';
 
     renderAll(jwt, findings);
   } catch (err) {
     currentJWT = null;
-    DOM.inputStatus.className   = 'input-status status-error';
+    DOM.inputStatus.className = 'input-status status-error';
     DOM.inputStatus.textContent = `✗ ${err.message}`;
     resetUI();
     // Keep input visible even in error state
-    DOM.inputStatus.className   = 'input-status status-error';
+    DOM.inputStatus.className = 'input-status status-error';
     DOM.inputStatus.textContent = `✗ ${err.message}`;
   }
 }
@@ -792,14 +794,14 @@ async function handleVerify() {
   if (!currentJWT) return;
 
   const secret = DOM.verifySecret.value.trim();
-  const alg    = DOM.verifyAlg.value;
+  const alg = DOM.verifyAlg.value;
 
   if (!secret) {
     showVerifyResult('error', 'Please enter a secret or public key.');
     return;
   }
 
-  DOM.btnVerify.disabled    = true;
+  DOM.btnVerify.disabled = true;
   DOM.btnVerify.textContent = 'Verifying…';
   DOM.btnVerify.classList.add('loading');
   hide(DOM.verifyResult);
@@ -838,7 +840,7 @@ async function handleVerify() {
 }
 
 function showVerifyResult(type, msg) {
-  DOM.verifyResult.className  = `verify-result vr-${type === 'valid' ? 'valid' : type === 'invalid' ? 'invalid' : 'error'}`;
+  DOM.verifyResult.className = `verify-result vr-${type === 'valid' ? 'valid' : type === 'invalid' ? 'invalid' : 'error'}`;
   DOM.verifyResult.textContent = msg;
   show(DOM.verifyResult);
 }
@@ -890,39 +892,39 @@ function handleCopyBtn(e) {
 function init() {
   // Populate DOM cache
   DOM = {
-    jwtInput:       document.getElementById('jwt-input'),
-    inputStatus:    document.getElementById('input-status'),
-    tokenVisual:    document.getElementById('token-visual'),
-    metaAlg:        document.getElementById('meta-alg'),
-    metaClaims:     document.getElementById('meta-claims'),
-    metaSig:        document.getElementById('meta-sig'),
-    decodedHeader:  document.getElementById('decoded-header'),
+    jwtInput: document.getElementById('jwt-input'),
+    inputStatus: document.getElementById('input-status'),
+    tokenVisual: document.getElementById('token-visual'),
+    metaAlg: document.getElementById('meta-alg'),
+    metaClaims: document.getElementById('meta-claims'),
+    metaSig: document.getElementById('meta-sig'),
+    decodedHeader: document.getElementById('decoded-header'),
     decodedPayload: document.getElementById('decoded-payload'),
-    claimCount:     document.getElementById('claim-count'),
-    findings:       document.getElementById('findings'),
-    auditTs:        document.getElementById('audit-ts'),
-    cntCritical:    document.getElementById('cnt-critical'),
-    cntHigh:        document.getElementById('cnt-high'),
-    cntMedium:      document.getElementById('cnt-medium'),
-    cntPass:        document.getElementById('cnt-pass'),
-    scoreCritical:  document.querySelector('.sc-critical'),
-    scoreHigh:      document.querySelector('.sc-high'),
-    scoreMedium:    document.querySelector('.sc-medium'),
-    scorePass:      document.querySelector('.sc-pass'),
-    verifyAlg:      document.getElementById('v-alg'),
-    verifySecret:   document.getElementById('v-secret'),
-    verifyResult:   document.getElementById('verify-result'),
-    keyHint:        document.getElementById('key-hint'),
-    btnVerify:      document.getElementById('btn-verify'),
-    btnSample:      document.getElementById('btn-sample'),
-    btnClear:       document.getElementById('btn-clear'),
-    emptyState:     document.getElementById('empty-state'),
-    cardBreakdown:  document.getElementById('card-breakdown'),
-    cardHeader:     document.getElementById('card-header'),
-    cardPayload:    document.getElementById('card-payload'),
-    cardScore:      document.getElementById('card-score'),
-    cardAudit:      document.getElementById('card-audit'),
-    cardVerify:     document.getElementById('card-verify'),
+    claimCount: document.getElementById('claim-count'),
+    findings: document.getElementById('findings'),
+    auditTs: document.getElementById('audit-ts'),
+    cntCritical: document.getElementById('cnt-critical'),
+    cntHigh: document.getElementById('cnt-high'),
+    cntMedium: document.getElementById('cnt-medium'),
+    cntPass: document.getElementById('cnt-pass'),
+    scoreCritical: document.querySelector('.sc-critical'),
+    scoreHigh: document.querySelector('.sc-high'),
+    scoreMedium: document.querySelector('.sc-medium'),
+    scorePass: document.querySelector('.sc-pass'),
+    verifyAlg: document.getElementById('v-alg'),
+    verifySecret: document.getElementById('v-secret'),
+    verifyResult: document.getElementById('verify-result'),
+    keyHint: document.getElementById('key-hint'),
+    btnVerify: document.getElementById('btn-verify'),
+    btnSample: document.getElementById('btn-sample'),
+    btnClear: document.getElementById('btn-clear'),
+    emptyState: document.getElementById('empty-state'),
+    cardBreakdown: document.getElementById('card-breakdown'),
+    cardHeader: document.getElementById('card-header'),
+    cardPayload: document.getElementById('card-payload'),
+    cardScore: document.getElementById('card-score'),
+    cardAudit: document.getElementById('card-audit'),
+    cardVerify: document.getElementById('card-verify'),
   };
 
   // Attach event listeners
